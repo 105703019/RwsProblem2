@@ -1,153 +1,187 @@
 package OSproject;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.JButton;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.event.*;
+
+import java.util.Calendar;
+import java.lang.Float;
 
 import java.awt.Font;
 import java.awt.geom.Rectangle2D;
 
-
 public class RWsProblem {
+
+	public static int data_size = 10;	
+	public static int red_size = -1;
+	public static int blue_size = -1;			
+	public static int room_seed = 0;
+	public static int room_size = 10;
+	public static int ball_speed = 1;
 	
-	public static int data1[] = {10,22,31,47,75,62,88,91,78,18};
-	public static int data2[] = {10,22,31,47,75,62,88,91,78,18};
 	
-	public static Object canReadMutex = new Object();
-	public static Object canWriteMutex = new Object();
-	
-	public static Object rcMutex = new Object();
-	public static Object wcMutex = new Object();
-	public static Object copyMutex = new Object();
-	public static Object moveMutex = new Object();
-	
-	public static Object buttomWait = new Object();
-	
+	public static int rfinishCount = 0;
+	public static int wfinishCount = 0;
+	public static int data1[] = new int[data_size];
+	public static int data2[] = new int[data_size];
+	public static int rwaitCount = 0;
+	public static int wwaitCount = 0;
+	public static int readerCount = 0;
 	public static boolean canRead = true;
 	public static boolean canWrite = true;
-	public static int readerCount = 0;
-	public static Random ran = new Random();
+	public static boolean startCopy = false;
+	public static int rGenerateCount = 0;
+	public static int wGenerateCount = 0;
+		
+	public static Object canReadMutex = new Object();
+	public static Object canWriteMutex = new Object();	
+	public static Object rcMutex = new Object();
+	public static Object copyMutex = new Object();
+	public static Object moveMutex = new Object();
+	public static Object rwaitMutex = new Object();
+	public static Object wwaitMutex = new Object();	
+	public static Object rFinishMutex = new Object();
+	public static Object wFinishMutex = new Object();
+	public static Object generateMutex = new Object();
+	
+	
+	public static Random ran = new Random(10);
 	public static int[] pos = {50,100,150,200,250,300,350,400,450,500};
 	
-	public static boolean startCopy = false;
-	
-	
-	
-	
-	public static  Object wall= new Object();
+	public JFrame frame;
     public static void main(String[] argv) {
+    	for (int i = 0; i < data_size; i ++) {
+    		data1[i] = ran.nextInt(100);
+    		data2[i] = data1[i];
+    	}
     	RWsProblem p = new RWsProblem();
         SwingUtilities.invokeLater( () -> new RWsProblem().startup(p) );
     }
-
-    public void startup(RWsProblem p) {
-        JFrame frame = new JFrame("Test");                              //create a window              
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);           //default close window method
-        Harbor h = new Harbor(p);
+   
+    JTextField playSpeed;
+    JTextField roomSeed;
+    JTextField roomSize;
+    JTextField readerLimit;
+    JTextField writerLimit;
+    static JButton playbtn;
+    
+    public void startup(RWsProblem p) { 	
+        frame = new JFrame("Read & Write Problem");			// create a window
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);		// default close window method
+        Harbor h = new Harbor();
         frame.setContentPane(h);                         
-        frame.setSize(600, 600);                                        //set window size
-        frame.setVisible(true);   //set window visible
+        frame.setResizable(false);									// set window size fixed
+        frame.setSize(1105, 645);									// set window size
+        frame.setVisible(true);										// set window visible
         
+        playSpeed = new JTextField();						// input for playSpeed
+        playSpeed.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        playSpeed.setBounds(950, 25,125, 30);
+        frame.add(playSpeed);
         
-        /*
-        waitButtom wb = new waitButtom(h.balls);
-        Container cp= frame.getContentPane();
-        cp.setLayout(null);
-        JButton b1=new JButton("Pause");    
-        b1.setBounds(20,20,100,40);
-        b1.addActionListener(wb);
-        cp.add(b1);
+        roomSize = new JTextField();						// input for roomSize
+        roomSize.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        roomSize.setBounds(950, 55,125, 30);
+        frame.add(roomSize);
         
+        roomSeed = new JTextField();						// input for roomSeed
+        roomSeed.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        roomSeed.setBounds(950, 85,125, 30);
+        frame.add(roomSeed);
         
-        wakeButtom wb2 = new wakeButtom();
-        cp.setLayout(null);
-        JButton b2=new JButton("Start");    
-        b2.setBounds(120,20,100,40);
-        b2.addActionListener(wb2);
-        cp.add(b2);
-        */
+        readerLimit = new JTextField();						// input for readerLimit
+        readerLimit.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        readerLimit.setBounds(950, 115,125, 30);
+        frame.add(readerLimit);
+        
+        writerLimit = new JTextField();						// input for writerLimit
+        writerLimit.setFont(new Font("TimesRoman", Font.PLAIN, 25));
+        writerLimit.setBounds(950, 145,125, 30);
+        frame.add(writerLimit);
+        
+        Font font = new Font("TimesRoman",Font.PLAIN,25);
+        playbtn = new JButton("Start");							// play buttom       
+        playbtn.setBounds(960, 200, 100, 50);
+        frame.add(playbtn,"South");
+        
+
+        
+         playbtn.addActionListener(new StartHandler(p,h,playbtn));
+         playbtn.setFont(font);
+                
     }
-    
-    
-    public class waitButtom implements ActionListener{ 
-    	  public List<BallWithOwnThread> balls;
-    	  public waitButtom(List<BallWithOwnThread> balls) {
-    		  this.balls = balls;
-    	  }
-    	  
-    	 public void actionPerformed(ActionEvent e) {
-    		  int count = 0;
-    		  for(BallWithOwnThread b : balls) {
-    		  }
-    	 }
-     }
-    
-    
-    /*
-	  synchronized(buttomWait) { 
-	  try { 
-		  System.out.println(balls.size());
-		  buttomWait.wait(); 
-       
-	  } 
-	  catch(InterruptedException ie) { 
-	         ie.printStackTrace(); 
-	   }
-	  }
-    */
-    public class wakeButtom implements ActionListener{ 
-  	  public wakeButtom() {
-  	  }
-  	 public void actionPerformed(ActionEvent e) {
-  			  synchronized(buttomWait) {  
-  				  buttomWait.notifyAll();  			 
-  		  }
-  	 }
-   }
-    
  
     public static class Harbor extends JComponent {
         public List<BallWithOwnThread> balls = new ArrayList<>();
         public DrawRoom r1 = new DrawRoom(this);
         public DrawData d1 = new DrawData(this);
+        public DrawDoor dr1 = new DrawDoor(this);
         
-        public Harbor(RWsProblem p) {
-            balls.add(new BallWithOwnThread(Color.RED, 175, 590, 12, 101, this ,balls,p) );
+        public Harbor() {
+            //balls.add(new BallWithOwnThread(Color.RED, 175, 590, 12, 101, this ,balls,p) );
         }
-
+        
+ 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);                                    // handle opaqueness
             Graphics2D g2 = (Graphics2D)g;
             balls.forEach( ball -> ball.paint(g2) );
             r1.paint(g2);
-            d1.paint(g2);;
+            d1.paint(g2);
+            dr1.paint(g2);
         }
     } // end static class Harbor
  
-    /*
-    g2.draw(new Rectangle2D.Double(x, y,
-            rectwidth,
-            rectheight));
-    */
-    
-    /**
-     * Few of us would argue that each Ball should have its own thread,
-     * especially if there are going to be a large number of balls, but
-     * this is a proof-of-concept that the approach can work.
-     */
+    public static class DrawDoor implements Runnable {
+    	private JComponent parent;
+    	int offset = 0;
+    	public DrawDoor(JComponent parent) {
+    		this.parent = parent;
+    	}
+    	
+    	public void paint(Graphics2D g) {
+  
+    		if(!canWrite) {
+    			try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return;
+                }if(offset < 100) {
+                	offset ++;
+                }
+    		}
+    		else{
+    			offset = 0;
+    		}
+  		      Rectangle2D topEnter = new Rectangle2D.Double(25+offset, 150, 100 ,5);
+		      g.setPaint(Color.BLACK);
+		      g.draw(topEnter);
+    	}
+    	
+    	public void run() {
+    	}
+    	
+    }
+
     public static class DrawData implements Runnable {
     	private JComponent parent;
     	public static int y = 0;
@@ -164,23 +198,25 @@ public class RWsProblem {
 	                    return;
 	                }
 	    			if(y < 155) {
-	        		  y += 1;
+	        		  y += 1 *ball_speed;
 	    			}else {
 	    				 synchronized(moveMutex) {
 	     						moveMutex.notifyAll(); 
 	            	   }  
 	    			}
 	    		  g.setPaint(Color.BLUE);
-	  	   		  g.drawString(""+data1[0],35,235+y);
-	  	   		  g.drawString(""+data1[1],85,235+y);
-	  	   		  g.drawString(""+data1[2],135,235+y);
-	  	   		  g.drawString(""+data1[3],185,235+y);
-	  	   		  g.drawString(""+data1[4],235,235+y);
-	  	   		  g.drawString(""+data1[5],285,235+y);
-	  	   		  g.drawString(""+data1[6],335,235+y);
-	  	   		  g.drawString(""+data1[7],385,235+y);
-	  	   		  g.drawString(""+data1[8],435,235+y);
-	  	   		  g.drawString(""+data1[9],485,235+y);
+	  	   		  g.drawString(""+(data1[0] == -1 ? "" : data1[0]),35,235+y);
+	  	   		  g.drawString(""+(data1[1] == -1 ? "" : data1[1]),85,235+y);
+	  	   		  g.drawString(""+(data1[2] == -1 ? "" : data1[2]),135,235+y);
+	  	   		  g.drawString(""+(data1[3] == -1 ? "" : data1[3]),185,235+y);
+	  	   		  g.drawString(""+(data1[4] == -1 ? "" : data1[4]),235,235+y);
+	  	   		  g.drawString(""+(data1[5] == -1 ? "" : data1[5]),285,235+y);
+	  	   		  g.drawString(""+(data1[6] == -1 ? "" : data1[6]),335,235+y);
+	  	   		  g.drawString(""+(data1[7] == -1 ? "" : data1[7]),385,235+y);
+	  	   		  g.drawString(""+(data1[8] == -1 ? "" : data1[8]),435,235+y);
+	  	   		  g.drawString(""+(data1[9] == -1 ? "" : data1[9]),485,235+y);
+	  	   		  
+	  	   		    		  
 	  	   		  
 	  		   	  Rectangle2D array1_Element1 = new Rectangle2D.Double(25, 200+y, 50 ,50+sizeOffset);
 	  	  		  g.setPaint(Color.BLACK);
@@ -238,28 +274,63 @@ public class RWsProblem {
 	    		}else {
 	    			 y = 0;
 	    			 parent.repaint();	   
-	    		}
-    		
-   
-   	
+	    		}  		
     	}
     	public void run() {
     	}
     }
-    
-    
-    
-    
+   
     public static class DrawRoom implements Runnable {
     	private JComponent parent;
     	public DrawRoom(JComponent parent) {
     		this.parent = parent;
     	}
-    	
+  	
     	public void paint(Graphics2D g) {
+    		  g.setPaint(Color.BLUE);
+    		  g.setFont(new Font("TimesRoman", Font.PLAIN, 25)); 
+	   		  g.drawString("Waiting Writers:"+rwaitCount, 575, 530);
+	   		  g.drawString("Generated Writers:"+wGenerateCount, 575, 590);
     		
-    		
-    		  //Ë˚é¶è„ï˚(reader)ñ[ä‘
+   	   		  g.setPaint(Color.RED);
+	   		  g.drawString("Waiting Readers: "+wwaitCount, 575, 500);
+	   		  g.drawString("Generated Readers: "+rGenerateCount, 575, 560);
+	   		  
+	   		  g.setPaint(Color.BLACK);
+	   		  g.drawString("                       Control Settings", 575, 20);
+	   		  g.drawString("                       Control Settings", 576, 21);
+	   		  g.drawString("> Play Speed(1x ~ 5x):", 575, 50);
+	   		  g.drawString("> Room Size(1~10): ", 575, 80);
+	   		  g.drawString("> Room Data Seed: ", 575, 110);
+	   		  g.drawString("> Reader Limit(>=1):", 575, 140);
+	   		  g.drawString("> Writer Limit(>=1):", 575, 170);
+	   		  g.drawString("             Current Settings Information", 575, 290);
+	   		  g.drawString("             Current Settings Information", 576, 291);
+	   		  g.drawString("Play Speed for this Cycle: "+ball_speed, 575, 320);
+	   		  g.drawString("Room Size for this Cycle: "+room_size, 575, 350);
+	   		  g.drawString("Room Seed for this Cycle: "+room_seed, 575, 380);
+	   		  g.drawString("Target Number of Reader:  "+ (red_size == -1 ? "inf" : red_size), 575, 410);
+	   		  g.drawString("Target Number of Writer:  "+ (blue_size == -1 ? "inf" : blue_size), 575, 440);
+	   		  g.drawString("                Current State Information", 575, 470);
+	   		  g.drawString("                Current State Information", 576, 471);
+	   		  
+	   		  // divide line
+	   		  g.drawLine(549, 0, 549, 605);
+	   		  g.drawLine(551, 0, 551, 605);
+	   		  
+	   		  // Control Settings line
+	   		  g.drawLine(551, 10, 725, 10);
+	   		  g.drawLine(925, 10, 1100, 10);
+	   		  
+	   		  // Current Settings Information line
+	   		  g.drawLine(551, 280, 660, 280);
+	   		  g.drawLine(990, 280, 1100, 280);
+	   		  
+	   		  // Current State Information line
+	   		  g.drawLine(551, 460, 675, 460);
+	   		  g.drawLine(975, 460, 1100, 460);
+	   		  
+    		  //ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ(reader)ÔøΩÔΩøÔΩΩ[ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
     		  Rectangle2D topRectM = new Rectangle2D.Double(25, 250,500,5);
     	      g.setPaint(Color.BLACK);
     	      g.fill(topRectM);
@@ -299,29 +370,28 @@ public class RWsProblem {
     		  g.draw(topRectMR);
     		 
     		  
-    		  if(!canWrite) {
-    		    Rectangle2D topEnter = new Rectangle2D.Double(125, 150, 100 ,5);
-    		    g.setPaint(Color.BLACK);
-    		    g.draw(topEnter);
-    		  }
+    		  //if(!canWrite) {
+    		   // Rectangle2D topEnter = new Rectangle2D.Double(125, 150, 100 ,5);
+    		  //  g.setPaint(Color.BLACK);
+    		   // g.draw(topEnter);
+    		 // }
     		  
     		  
-    		  //Ë˚é¶è„ï˚(reader)ñ[ä‘éëóø
-    		  g.setPaint(Color.BLUE);
-    		  g.drawString(""+data1[0],35,235);
-    		  g.drawString(""+data1[1],85,235);
-    		  g.drawString(""+data1[2],135,235);
-    		  g.drawString(""+data1[3],185,235);
-    		  g.drawString(""+data1[4],235,235);
-    		  g.drawString(""+data1[5],285,235);
-    		  g.drawString(""+data1[6],335,235);
-    		  g.drawString(""+data1[7],385,235);
-    		  g.drawString(""+data1[8],435,235);
-    		  g.drawString(""+data1[9],485,235);
+    		  //ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ(reader)ÔøΩÔΩøÔΩΩ[ÔøΩÔΩøÔΩΩÔæîË∂£ÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
+    		  g.setPaint(Color.BLUE);  		  
+  	   		  g.drawString(""+(data1[0] == -1 ? "" : data1[0]),35,235);
+  	   		  g.drawString(""+(data1[1] == -1 ? "" : data1[1]),85,235);
+  	   		  g.drawString(""+(data1[2] == -1 ? "" : data1[2]),135,235);
+  	   		  g.drawString(""+(data1[3] == -1 ? "" : data1[3]),185,235);
+  	   		  g.drawString(""+(data1[4] == -1 ? "" : data1[4]),235,235);
+  	   		  g.drawString(""+(data1[5] == -1 ? "" : data1[5]),285,235);
+  	   		  g.drawString(""+(data1[6] == -1 ? "" : data1[6]),335,235);
+  	   		  g.drawString(""+(data1[7] == -1 ? "" : data1[7]),385,235);
+  	   		  g.drawString(""+(data1[8] == -1 ? "" : data1[8]),435,235);
+  	   		  g.drawString(""+(data1[9] == -1 ? "" : data1[9]),485,235);
     		  
     		  
-    		  
-    		  //Ë˚é¶è„ï˚(reader)ñ[ä‘éëóøìIäiéq
+    		  //ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ(reader)ÔøΩÔΩøÔΩΩ[ÔøΩÔΩøÔΩΩÔæîË∂£ÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩIÔøΩÔΩøÔΩΩiÔøΩÔΩøÔΩΩq
     		  Rectangle2D array1_Element1 = new Rectangle2D.Double(25, 200, 50 ,50);
     		  g.setPaint(Color.BLACK);
     		  g.draw(array1_Element1);
@@ -381,7 +451,7 @@ public class RWsProblem {
     		  
     		  
     		  
-    		  //Ë˚é¶â∫ï˚(writer)ñ[ä‘
+    		  //ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ(writer)ÔøΩÔΩøÔΩΩ[ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
     		  Rectangle2D bottomRectM = new Rectangle2D.Double(25, 350,500,5);
     	      g.setPaint(Color.BLACK);
     	      g.fill(bottomRectM);
@@ -420,24 +490,23 @@ public class RWsProblem {
     		    g.draw(bottomEnter);
     		  }
     		  
-    		  //Ë˚é¶â∫ï˚(writer)ñ[ä‘éëóø
-    		  g.setPaint(Color.RED);
-    		  g.drawString(""+data2[0],35,390);
-    		  g.drawString(""+data2[1],85,390);
-    		  g.drawString(""+data2[2],135,390);
-    		  g.drawString(""+data2[3],185,390);
-    		  g.drawString(""+data2[4],235,390);
-    		  g.drawString(""+data2[5],285,390);
-    		  g.drawString(""+data2[6],335,390);
-    		  g.drawString(""+data2[7],385,390);
-    		  g.drawString(""+data2[8],435,390);
-    		  g.drawString(""+data2[9],485,390);
+    		  //ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ(writer)ÔøΩÔΩøÔΩΩ[ÔøΩÔΩøÔΩΩÔæîË∂£ÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
+    		  g.setPaint(Color.RED); 		  
+  	   		  g.drawString(""+(data2[0] == -1 ? "" : data2[0]),35,390);
+  	   		  g.drawString(""+(data2[1] == -1 ? "" : data2[1]),85,390);
+  	   		  g.drawString(""+(data2[2] == -1 ? "" : data2[2]),135,390);
+  	   		  g.drawString(""+(data2[3] == -1 ? "" : data2[3]),185,390);
+  	   		  g.drawString(""+(data2[4] == -1 ? "" : data2[4]),235,390);
+  	   		  g.drawString(""+(data2[5] == -1 ? "" : data2[5]),285,390);
+  	   		  g.drawString(""+(data2[6] == -1 ? "" : data2[6]),335,390);
+  	   		  g.drawString(""+(data2[7] == -1 ? "" : data2[7]),385,390);
+  	   		  g.drawString(""+(data2[8] == -1 ? "" : data2[8]),435,390);
+  	   		  g.drawString(""+(data2[9] == -1 ? "" : data2[9]),485,390);
+    		  
     		  
     		  
 
-    		  
-    		  
-    		  //Ë˚é¶â∫ï˚(writer)ñ[ä‘éëóøìIäiéq
+ 
     		  Rectangle2D array2_Element1 = new Rectangle2D.Double(25, 350, 50 ,50);
     		  g.setPaint(Color.BLACK);
     		  g.draw(array2_Element1);
@@ -469,7 +538,6 @@ public class RWsProblem {
     		  g.setPaint(Color.BLACK);
     		  g.draw(array2_Element10);
     		  
-    		  //éù„îç¸êV
     		  parent.repaint();	  
     	}
     	@Override
@@ -479,10 +547,7 @@ public class RWsProblem {
     		}
     	}
     }
-    
-    
-    
-    
+
     public static class BallWithOwnThread implements Runnable {
         private Color color;
         private int x, y, radius, milliseconds;
@@ -502,17 +567,9 @@ public class RWsProblem {
             this.parent = parent;
 
             Timer timer = new Timer();
-            if(x < 600) {
-         	    timer.schedule(p.new DateTasks(Color.BLUE, x, 10, 14, 101,parent,balls,p), (long)(-1/(1.0/1000.0)*Math.log(Math.random())));
-            }else {
-            	timer.schedule(p.new DateTasks(Color.BLUE, 50 , 10, 142, 101,parent,balls,p), (long)(-1/(1.0/1000.0)*Math.log(Math.random())));
-            }
-            // create and start this object's thread
-            new Thread(this).start();
+	            timer.schedule(p.new DateTasks(14, 101,parent,balls,p), (long)(-1/(1.0/1000.0)*Math.log(Math.random())));
+	            new Thread(this).start();
         }
-        
-        
-        
  
         public void paint(Graphics2D g) {
             // Draw the ball. Don't change state.
@@ -527,9 +584,7 @@ public class RWsProblem {
  
         @Override
         public void run() {
-        	
-            for ( ; ; ) {
-            	
+
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
@@ -543,8 +598,8 @@ public class RWsProblem {
                 if(color == Color.BLUE) {
                 	 int value = ran.nextInt(100);
                 	 s = ""+ value;
-                	// y = 130 ñÂëO
-                	// y = 175 ñÂå„
+                	// y = 130 ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩO
+                	// y = 175 ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
                 	// x = 50 100 150 200 250 300 350 400 450 500 (index)
                 	// x = 375 exit  position
                 	// x = 125 enter position
@@ -558,7 +613,7 @@ public class RWsProblem {
                             return;
                         }
                 		if(y <= 130) {
-                			y += 1;
+                			y += 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
@@ -567,7 +622,10 @@ public class RWsProblem {
                 	}
                 	
                 	
-                	
+              	      synchronized(rwaitMutex) {	
+              	    	 rwaitCount++;
+              	      }
+        	
             		while(true) {
            			 synchronized(canWriteMutex) {	
            				 if(canWrite == true) {
@@ -586,7 +644,11 @@ public class RWsProblem {
            		  }
                 
            		
-                	
+            	      synchronized(rwaitMutex) {	
+            	    	 rwaitCount--;
+            	      }
+            		
+            		
             		
             		while(true) {
                 		try {
@@ -596,7 +658,7 @@ public class RWsProblem {
                             return;
                         }
                 		if(y <= 175) {
-                			y += 1;
+                			y += 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
@@ -605,7 +667,7 @@ public class RWsProblem {
                 	}
             		
             		
-            	   int index = ran.nextInt(10);
+            	   int index = ran.nextInt(data_size);
             	  
             		
                 	
@@ -619,7 +681,7 @@ public class RWsProblem {
                                return;
                            }
                    		if(x > pos[index]) {
-                   			 x -= 1;
+                   			 x -= 1*ball_speed;
                           	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                    		}else {
@@ -635,7 +697,7 @@ public class RWsProblem {
                                return;
                            }
                    		if(x < pos[index]) {
-                   			 x += 1;
+                   			 x += 1*ball_speed;
                           	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                    		}else {
@@ -663,7 +725,7 @@ public class RWsProblem {
                                return;
                            }
                    		if(x < 375) {
-                   			 x += 1;
+                   			 x += 1*ball_speed;
                           	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                    		}else {
@@ -679,7 +741,7 @@ public class RWsProblem {
                                return;
                            }
                    		if(x > 375) {
-                   			 x -= 1;
+                   			 x -= 1*ball_speed;
                           	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                    		}else {
@@ -710,11 +772,12 @@ public class RWsProblem {
              				}
              			}
              		}
+            	        
             	   
-            	   startCopy = true;
-            	   
-            	   
-            	   
+            	   synchronized(copyMutex) {
+            	      startCopy = true;
+            	   }
+         	   
             	   synchronized(moveMutex) {
      					 try { 
      						moveMutex.wait(); 
@@ -737,8 +800,9 @@ public class RWsProblem {
   					}
             	  
             	   
-            	   
-            	   startCopy = false;
+            	   synchronized(copyMutex) {
+            	      startCopy = false;
+            	   }
             	   
             	   
             	   while(true) {
@@ -749,7 +813,7 @@ public class RWsProblem {
                               return;
                           }
                   		if(y > 130) {
-                  			 y -= 1;
+                  			 y -= 1*ball_speed;
                          	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                               parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                   		}else {
@@ -769,8 +833,16 @@ public class RWsProblem {
            			canWriteMutex.notifyAll();
            			 System.out.println("Levae write: [" + "]");
            		   }
-            	   
-            	   
+            	  
+           		synchronized(rFinishMutex) {
+            		synchronized(wFinishMutex) {
+            			   wfinishCount++;
+		             	 if(rfinishCount == red_size && wfinishCount == blue_size) {
+		            		 playbtn.setEnabled(true);
+		            	 }
+            		}
+           		}
+           		  
            		  while(true) {
                 		try {
                             Thread.sleep(10);
@@ -779,51 +851,16 @@ public class RWsProblem {
                             return;
                         }
                 		if(y > -20) {
-                			 y -= 1;
+                			 y -= 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
-                			 
+                             	break;                           
                 		}
                 	 }
            		   
            		   
-           		   
-            	   
-                	/*
-                   if(y <= 130 && mode == 0) {
-                	   y += 1;
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                   }  
-                   */
-
-            		/*
-                    if(y > 175 && mode == 0) {
-                	   //color = Color.CYAN;  
-	                   try { 
-	           			 Thread.sleep(3000);
-	           			 s = ""+(int)(Math.random() * 10);
-	           			 data1[0]++;
-	           			//System.out.println(data1[0]);
-	           			 mode = 1;
-	           	       } 
-	           	       catch(InterruptedException e) {          
-	           	       }
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                   }
-                   else if(x<375){
-                	   x++;
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                   }else {
-                	   y--;
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                   }
-                   
-                   */
+  
                 }
                 
                 
@@ -831,8 +868,8 @@ public class RWsProblem {
                 
                 if(color == Color.RED) {
                 	
-                	// y = 425 ñÂëO
-                	// y = 480 ñÂå„
+                	// y = 425 ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩO
+                	// y = 480 ÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩÔøΩÔΩøÔΩΩ
                 	// x = 50 100 150 200 250 300 350 400 450 500 (index)
                 	// x = 375 exit  position
                 	// x = 125 enter position 	
@@ -846,13 +883,17 @@ public class RWsProblem {
                             return;
                         }
                 		if(y >= 480) {
-                			 y -= 1;
+                			 y -= 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
                 			break;
                 		}
                 	}
+                	
+                	 synchronized(wwaitMutex) {	
+              	    	 wwaitCount++;
+              	      }
                 	
                 	
                 	while(true) {
@@ -871,6 +912,11 @@ public class RWsProblem {
            		   }
                 	
                 	
+               	 synchronized(wwaitMutex) {	
+          	    	 wwaitCount--;
+          	      }
+                	
+               	   
                 	
                 	while(true) {
                 		try {
@@ -880,7 +926,7 @@ public class RWsProblem {
                             return;
                         }
                 		if(y >= 425) {
-                			 y -= 1;
+                			 y -= 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
@@ -895,7 +941,7 @@ public class RWsProblem {
             		}	 
                 	
                 	
-                	int index = ran.nextInt(10);
+                	int index = ran.nextInt(data_size);
 
                 	if(index <= 2) {
                     	while(true) {
@@ -906,7 +952,7 @@ public class RWsProblem {
                                 return;
                             }
                     		if(x > pos[index]) {
-                    			 x -= 1;
+                    			 x -= 1*ball_speed;
                            	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                 parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                     		}else {
@@ -922,7 +968,7 @@ public class RWsProblem {
                                 return;
                             }
                     		if(x < pos[index]) {
-                    			 x += 1;
+                    			 x += 1*ball_speed;
                            	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                 parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                     		}else {
@@ -951,7 +997,7 @@ public class RWsProblem {
                                 return;
                             }
                     		if(x < 375) {
-                    			 x += 1;
+                    			 x += 1*ball_speed;
                            	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                 parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                     		}else {
@@ -967,7 +1013,7 @@ public class RWsProblem {
                                 return;
                             }
                     		if(x > 375) {
-                    			 x -= 1;
+                    			 x -= 1*ball_speed;
                            	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                                 parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                     		}else {
@@ -985,7 +1031,7 @@ public class RWsProblem {
                             return;
                         }
                 		if(y < 480) {
-                			 y += 1;
+                			 y += 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
                 		}else {
@@ -1003,8 +1049,14 @@ public class RWsProblem {
             			System.out.println("Leave read: [" + "] Now Reader : " + readerCount );
             		}
                 	
-                	
-                	
+                	synchronized(rFinishMutex) {
+                		synchronized(wFinishMutex) {
+                			 rfinishCount++;                	
+	                	 if(rfinishCount == red_size && wfinishCount == blue_size) {
+	                		 playbtn.setEnabled(true);
+	                	 }
+                		}
+                	}
                 	
                 	while(true) {
                 		try {
@@ -1013,78 +1065,159 @@ public class RWsProblem {
                             e.printStackTrace();
                             return;
                         }
-                			y += 1;
+                			y += 1*ball_speed;
                        	    parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
                             parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
+                            if(y > 620) {
+                            	break;
+                            }
                 	}
                 	
                 	
-                	/*
-                	 if(y >= 480 && mode == 0) {
-                  	   y -= 1;
-                  	 parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                     parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                     }
-                     else if(y < 480 && mode == 0) {
-  	                   try { 
-  	           			 Thread.sleep(3000); 
-  	           			 mode = 1;
-  	           	       } 
-  	           	       catch(InterruptedException e) {          
-  	           	       }
-  	                   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-  	                   parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                     }
-                     else if(x<375){
-                  	   x++;
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                  	   //y -= dy;
-                     }else {
-                  	   y++;
-                  	   parent.repaint(x-radius, y-radius, 2*radius, 2*radius);         
-                       parent.repaint(xOld-radius, yOld-radius, 2*radius, 2*radius);
-                     }
-                     
-                     */
                 }
                 
                 
                 
             }
-        }
+        
         
     }
        
         
         
     public class DateTasks extends TimerTask {
-   	 private Color color;
         private int x, y, radius, milliseconds;
         private boolean blink, visible=true;
         private JComponent parent;
         private List<BallWithOwnThread> balls;
         private RWsProblem p;
-		 public DateTasks(Color color, int x, int y, int radius, int milliseconds, JComponent parent,List<BallWithOwnThread> balls , RWsProblem p) {
+		 public DateTasks(int radius, int milliseconds, JComponent parent,List<BallWithOwnThread> balls , RWsProblem p) {
 			 super();
-    	this.color = color;
-       this.x = x;
-       this.y = y;
-       this.radius = radius;
-       this.milliseconds = milliseconds;
-       this.parent = parent;
-       this.balls = balls;
-       this.p = p;
+		     this.radius = radius;
+		     this.milliseconds = milliseconds;
+		     this.parent = parent;
+		     this.balls = balls;
+		     this.p = p;
 		 }
 		 @ Override
 		 public void run() {
-			 if(Math.random() >= 0.5) {
-				 balls.add( new BallWithOwnThread(Color.BLUE,x, y, radius,  milliseconds, parent,balls,p) );	 
-		   	  }else {
-		   		 balls.add( new BallWithOwnThread(Color.RED,x, 590, radius, milliseconds, parent,balls,p) );	 
-		   	  }
+			 double c = Math.random();
+			 synchronized(generateMutex){
+			  if(c >= 0.5 && (rGenerateCount < red_size || red_size < 0)) {
+				 balls.add( new BallWithOwnThread(Color.RED,175, 590, radius, milliseconds, parent,balls,p) );
+				 rGenerateCount++;
+		   	  }else if(wGenerateCount < blue_size || blue_size < 0){
+		   		 balls.add(new BallWithOwnThread(Color.BLUE,175, 10, radius,  milliseconds, parent,balls,p) );	  
+		   		 wGenerateCount++;
+		   	 }else if((rGenerateCount < red_size || red_size < 0)) {
+		   		 balls.add( new BallWithOwnThread(Color.RED,175, 590, radius, milliseconds, parent,balls,p) );
+		   		 rGenerateCount++;
+		   	 }
+			 }
 		 }
   }
+    
+    class StartHandler implements ActionListener {
+    	RWsProblem p;
+    	Harbor h;
+    	JButton startB;
+    	public StartHandler(RWsProblem p,Harbor h,JButton startB  ) {
+    		this.p = p;
+    		this.h= h;
+    		this.startB = startB;
+    	}
+        public void actionPerformed(ActionEvent e) { 
+        	rGenerateCount = 0;
+        	wGenerateCount = 0;
+        	wfinishCount = 0;
+        	rfinishCount = 0;
+        	// "playSpeed" input////////////////////////////
+        	int speed = 0;
+        	if(playSpeed.getText().equals("")) {
+        		speed = 1;
+        	}else {       		
+        		speed = Integer.parseInt(playSpeed.getText());
+        	}
+        	if(speed < 1) {
+        		speed = 1;
+        	}else if(speed > 5f) {
+        		speed = 5;
+        	}
+        	ball_speed = speed;
+        	//////////////////////////////////////////
+        	
+        	
+        	
+        	// "Room size" input////////////////////////////
+        	if(!roomSize.getText().equals("")) {
+	        	int size = 0;
+	        	size = Integer.parseInt(roomSize.getText());
+	        	if(size>10) {
+	        		size= 10;
+	        	}
+	        	if(size < 1) {
+	        		size = 1;
+	        	}
+	        	
+	        	for (int i = size; i < 10; i ++) {
+	        		data1[i] = -1;
+	        		data2[i] = -1;
+	        	}
+	        	data_size = size;
+	        	room_size = size;
+        	}
+        	//////////////////////////////////////////
+        	
+        	// "Seed" input////////////////////////////
+        	int seed = 0;
+        	if(roomSeed.getText().equals("")) {
+        	    seed = (int)Calendar.getInstance().getTimeInMillis();
+        	}else {
+        		seed = Integer.parseInt(roomSeed.getText());
+        	}
+        	Random ran2 = new Random(seed);
+        	room_seed = seed;
+        	for (int i = 0; i < data_size; i ++) {
+        		data1[i] = ran2.nextInt(100);
+        		data2[i] = data1[i];
+        	}
+        	//////////////////////////////////////////
+        	
+       	
+        	// "reader limit" input////////////////////////////
+        	if(!readerLimit.getText().equals("")) {
+	        	int size = 0;
+	        	size = Integer.parseInt(readerLimit.getText());
+	        	if(size<1) {
+	        		size= 1;
+	        	}
+	        	red_size = size;
+        	}
+        	//////////////////////////////////////////
+        	
+
+        	
+        	// "ter limit" input////////////////////////////
+        	if(!writerLimit.getText().equals("")) {
+	        	int size = 0;
+	        	size = Integer.parseInt(writerLimit.getText());
+	        	if(size<1) {
+	        		size= 1;
+	        	}
+	        	blue_size = size;
+        	}
+        	//////////////////////////////////////////
+        	
+        	
+        	
+        	h.balls.add(new BallWithOwnThread(Color.RED, 175, 590, 14, 101, h ,h.balls,p) );
+        	synchronized(generateMutex){
+        	    rGenerateCount++;
+        	}
+        	startB.setEnabled(false);
+        }
+    }
+    
         
  
 }
